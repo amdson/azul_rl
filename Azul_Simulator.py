@@ -636,37 +636,42 @@ def take_action(state, action, rng):
         offset = action - Action_Indices.CENTER.value
         tile = offset // 6
         row_num = offset % 6
-        row = State_Indices.ROWS.value[row_num]
         
         # Check that the center does contain one or more corresponding tiles
         center_index = State_Indices.CENTER.value + tile
         if state[center_index] == 0:
             return illegal_action
         
-        # Check to make sure the tiles can be placed in the row
-        for i in range(5):
-            # Another type of tile is in this row
-            if state[row + i] > 0 and i != tile:
-                return illegal_action
-            # This row is already full
-            elif state[row + i] == row_num + 1:
-                return illegal_action
-            
-        # Check to make sure the corresponding spot on the board isn't filled
-        board_start = State_Indices.BOARD.value
-        current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
-        for i in range(5):
-            if Board[row_num][i] == tile and current_board[row_num][i] == 1:
-                return illegal_action
-            
-        # Move tiles
-        new_state[center_index] = 0
-        num_in_row = state[row + tile]
-        remaining_spaces = row_num + 1 - num_in_row
-        add_to_row = min(state[center_index], remaining_spaces)
-        add_to_floor = state[center_index] - add_to_row
-        new_state[row + tile] += add_to_row
-        new_state[State_Indices.FLOOR.value + tile] += add_to_floor
+        # Move tiles directly to the floor
+        if row_num == 5:
+            new_state[center_index] = 0
+            new_state[State_Indices.FLOOR.value + tile] += state[center_index]
+        else:
+            # Check to make sure the tiles can be placed in the row
+            row = State_Indices.ROWS.value[row_num]
+            for i in range(5):
+                # Another type of tile is in this row
+                if state[row + i] > 0 and i != tile:
+                    return illegal_action
+                # This row is already full
+                elif state[row + i] == row_num + 1:
+                    return illegal_action
+                
+            # Check to make sure the corresponding spot on the board isn't filled
+            board_start = State_Indices.BOARD.value
+            current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
+            for i in range(5):
+                if Board[row_num][i] == tile and current_board[row_num][i] == 1:
+                    return illegal_action
+                
+            # Move tiles
+            new_state[center_index] = 0
+            num_in_row = state[row + tile]
+            remaining_spaces = row_num + 1 - num_in_row
+            add_to_row = min(state[center_index], remaining_spaces)
+            add_to_floor = state[center_index] - add_to_row
+            new_state[row + tile] += add_to_row
+            new_state[State_Indices.FLOOR.value + tile] += add_to_floor
         
         # Move 1st player tile if necessary
         if state[State_Indices.CENTER.value + 5] == 1:
@@ -679,37 +684,42 @@ def take_action(state, action, rng):
         factory_num = (action - Action_Indices.FACTORIES.value) // 30
         tile = offset // 6
         row_num = offset % 6
-        row = State_Indices.ROWS.value[row_num]
         
         # Check that the factory does contain one or more corresponding tiles
         factory_index = State_Indices.FACTORIES.value[factory_num] + tile
         if state[factory_index] == 0:
             return illegal_action
         
-        # Check to make sure the tiles can be placed in the row
-        for i in range(5):
-            # Another type of tile is in this row
-            if state[row + i] > 0 and i != tile:
-                return illegal_action
-            # This row is already full
-            elif state[row + i] == row_num + 1:
-                return illegal_action
-            
-        # Check to make sure the corresponding spot on the board isn't filled
-        board_start = State_Indices.BOARD.value
-        current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
-        for i in range(5):
-            if Board[row_num][i] == tile and current_board[row_num][i] == 1:
-                return illegal_action
-            
-        # Move tiles
-        new_state[factory_index] = 0
-        num_in_row = state[row + tile]
-        remaining_spaces = row_num + 1 - num_in_row
-        add_to_row = min(state[factory_index], remaining_spaces)
-        add_to_floor = state[factory_index] - add_to_row
-        new_state[row + tile] += add_to_row
-        new_state[State_Indices.FLOOR.value + tile] += add_to_floor
+        # Move tiles directly to the floor
+        if row_num == 5:
+            new_state[factory_index] = 0
+            new_state[State_Indices.FLOOR.value + tile] += state[factory_index]
+        else:
+            # Check to make sure the tiles can be placed in the row
+            row = State_Indices.ROWS.value[row_num]
+            for i in range(5):
+                # Another type of tile is in this row
+                if state[row + i] > 0 and i != tile:
+                    return illegal_action
+                # This row is already full
+                elif state[row + i] == row_num + 1:
+                    return illegal_action
+                
+            # Check to make sure the corresponding spot on the board isn't filled
+            board_start = State_Indices.BOARD.value
+            current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
+            for i in range(5):
+                if Board[row_num][i] == tile and current_board[row_num][i] == 1:
+                    return illegal_action
+                
+            # Move tiles
+            new_state[factory_index] = 0
+            num_in_row = state[row + tile]
+            remaining_spaces = row_num + 1 - num_in_row
+            add_to_row = min(state[factory_index], remaining_spaces)
+            add_to_floor = state[factory_index] - add_to_row
+            new_state[row + tile] += add_to_row
+            new_state[State_Indices.FLOOR.value + tile] += add_to_floor
         
         # Move excess tiles to center
         factory_start = factory_index - tile
