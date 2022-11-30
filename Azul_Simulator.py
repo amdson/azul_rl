@@ -729,7 +729,7 @@ def take_action(state, action, rng):
             new_state[factory_start + i] = 0
             
     # If necessary, score boards and prepare for the following round
-    table_start = State_Indices.CENTER.value
+    table_start = State_Indices.FACTORIES.value[0]
     table_end = State_Indices.BOARD.value
     if not np.any(new_state[table_start:table_end]):
         # Set noop flag if current player has the 1st player token
