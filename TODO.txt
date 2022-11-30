@@ -14,5 +14,3 @@
 - MCTS class 
 
 - Training loop with MCTS training examples
-
-
