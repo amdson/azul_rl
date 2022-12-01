@@ -61,10 +61,10 @@ def get_expanded_bag(bag):
         Expanded representation of a bag (used for sampling).
     """
     num_bag = np.sum(bag)
-    expanded_bag = np.zeros(num_bag, dtype=np.int8)
+    expanded_bag = np.zeros(num_bag, dtype=int)
     counter = 0
     for tile in range(5):
-        for i in range(bag[tile]):
+        for _ in range(bag[tile]):
             expanded_bag[counter] = tile
             counter += 1
     return expanded_bag
@@ -83,7 +83,7 @@ def get_compact_bag(expanded_bag):
     bag : np.array[int]
         Compact representation of a bag (used in state space).
     """
-    bag = np.zeros(5, dtype=np.int8)
+    bag = np.zeros(5, dtype=int)
     for tile in expanded_bag:
         bag[tile] = bag[tile] + 1
     return bag
@@ -133,7 +133,7 @@ def shuffle_tiles(tiles, rng):
     # Check if we need to shuffle in the discarded tiles
     if num_to_select < 20 and num_discard > 0:
         bag = np.copy(discard)
-        discard = np.zeros(5, dtype=0)
+        discard = np.zeros(5, dtype=int)
         
         # Repeat earlier process for the remaining tiles
         expanded_bag = get_expanded_bag(bag)
