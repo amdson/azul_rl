@@ -754,7 +754,7 @@ def get_valid_mask(state):
         return mask
     
     # Construct 3d representation of action space with all actions initially legal
-    mask = np.ones((6, 5, 6))
+    mask = np.ones((6, 5, 6), dtype=int)
     board_start = State_Indices.BOARD.value
     current_board = np.reshape(np.copy(state[board_start:board_start + 25]), (5, 5))
     
