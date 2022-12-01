@@ -116,8 +116,9 @@ def shuffle_tiles(tiles, rng):
     
     # Bag is empty, put all tiles from the discard back in the bag
     if num_bag == 0:
-        discard = np.copy(bag)
+        temp = np.copy(bag)
         bag = np.copy(discard)
+        discard = temp
         num_bag = np.sum(bag)
         num_discard = np.sum(discard)
     
@@ -138,7 +139,7 @@ def shuffle_tiles(tiles, rng):
         # Repeat earlier process for the remaining tiles
         expanded_bag = get_expanded_bag(bag)
         num_to_select = 20 - num_to_select
-        selected = np.concatenate(selected, expanded_bag[:num_to_select])
+        selected = np.concatenate((selected, expanded_bag[:num_to_select]))
         expanded_bag = expanded_bag[num_to_select:]
     
     bag = get_compact_bag(expanded_bag)
@@ -491,6 +492,7 @@ def shift_and_score(state):
     score = 0
     score_opp = 0
     new_state = np.copy(state)
+    discard = State_Indices.DISCARD.value
     
     # Current Player - iterate over rows
     for i in range(5):
@@ -529,12 +531,14 @@ def shift_and_score(state):
                             score += 10
                         
                 # Clear the current row and move on to the next one
+                new_state[discard + j - row_start] += i
                 new_state[j] = 0
                 break
             
     # Subtract the floor penalty for the current player
     floor_start = State_Indices.FLOOR.value
     score -= get_floor_penalty(new_state[floor_start:floor_start + 6])
+    new_state[discard:discard + 5] += new_state[floor_start:floor_start + 5]
     new_state[floor_start:floor_start + 6] = np.zeros(6, dtype=int)
     new_state[State_Indices.SCORE.value] += score
     
@@ -575,12 +579,14 @@ def shift_and_score(state):
                             score_opp += 10
                         
                 # Clear the current row and move on to the next one
+                new_state[discard + j - row_start] += i
                 new_state[j] = 0
                 break
             
     # Subtract the floor penalty for the current player
     floor_start = State_Indices.FLOOR_OPP.value
     score_opp -= get_floor_penalty(new_state[floor_start:floor_start + 6])
+    new_state[discard:discard + 5] += new_state[floor_start:floor_start + 5]
     new_state[floor_start:floor_start + 6] = np.zeros(6, dtype=int)
     new_state[State_Indices.SCORE_OPP.value] += score_opp
 
@@ -604,7 +610,8 @@ def get_next_state(state, action, rng):
     new_state : np.array[int]
         Representation (len 157) of the subsequent state (after taking action).
     """
-    new_state = np.copy(state)
+    state = state.astype(int)
+    new_state = state.astype(int)
     
     # Check for noop action
     noop = State_Indices.NOOP.value
@@ -728,7 +735,7 @@ def get_next_state(state, action, rng):
         new_state = shift_and_score(new_state)
         
         # Prepare for the next round
-        selected, new_tiles = shuffle_tiles(np.copy(state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]]), rng)
+        selected, new_tiles = shuffle_tiles(np.copy(new_state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]]), rng)
         new_state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]] = new_tiles
         new_state = add_tiles_to_factories(new_state, selected)
         
