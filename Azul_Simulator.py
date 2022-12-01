@@ -749,8 +749,8 @@ def get_valid_mask(state):
     """
     # Check if a noop is the only valid action
     if state[State_Indices.NOOP.value] == 1:
-        mask = np.zeros(181)
-        mask[0] = 1
+        mask = np.zeros(181, dtype=int)
+        mask[State_Indices.NOOP.value] = 1
         return mask
     
     # Construct 3d representation of action space with all actions initially legal
@@ -793,7 +793,7 @@ def get_valid_mask(state):
                     
     # Reshape and add in another index at the front set to 0
     temp = np.reshape(mask, 180)
-    mask = np.zeros(181)
+    mask = np.zeros(181, dtype=int)
     mask[1:] = temp
     return mask   
 
