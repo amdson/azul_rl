@@ -163,7 +163,6 @@ def add_tiles_to_factories(state, expanded_bag):
         expanded_bag added.
     """
     counter = 0
-    table = np.zeros(36)
     new_state = np.copy(state)
     
     # Iterate over factories
@@ -182,7 +181,7 @@ def add_tiles_to_factories(state, expanded_bag):
     new_state[State_Indices.CENTER.value + Tile_Offsets.S.value] = 1
     return new_state
     
-def init_state(rng):
+def init_board(rng):
     """
     Parameters
     ----------
@@ -201,7 +200,7 @@ def init_state(rng):
     state = add_tiles_to_factories(state, selected)    
     return state
      
-def flip_state(state):
+def flip_board(state):
     """
     Parameters
     ----------
@@ -224,7 +223,7 @@ def flip_state(state):
     new_state[State_Indices.SCORE_DIFF.value] *= -1
     return new_state
 
-def print_state(state):
+def disp_board(state):
     """
     Assumes that the "current player" is always the computer. You must call
     flip_state beforehand if this is not true.
@@ -396,12 +395,9 @@ def score_line(line, pos, horizontal):
     -------
     score : int
         The score of the line.
-    end : bool
-        Whether or not a game ending condition has been met
     """
     assert line[pos] == 1, "'pos' does not correspond to a tile in 'line'"
     score = 1
-    end = False
     
     # Check tiles before pos
     for i in reversed(range(0, pos)):
@@ -425,11 +421,10 @@ def score_line(line, pos, horizontal):
     if np.sum(line) == 5:
         if horizontal:
             score += 2
-            end = True
         else:
             score += 7
             
-    return score, end
+    return score
 
 def check_fifth_tile(tile, board):
     """
@@ -495,7 +490,6 @@ def shift_and_score(state):
     """
     score = 0
     score_opp = 0
-    end = False
     new_state = np.copy(state)
     
     # Current Player - iterate over rows
@@ -521,9 +515,9 @@ def shift_and_score(state):
                         
                         # Update score based on rows and columns
                         current_board = np.reshape(new_state[board_start:board_start + 25], (5, 5))
-                        add_to_score1, end = score_line(current_board[i], k - board_row_start, True)
+                        add_to_score1 = score_line(current_board[i], k - board_row_start, True)
                         score += add_to_score1
-                        add_to_score2, _ = score_line(current_board[:, k - board_row_start], i, False)
+                        add_to_score2 = score_line(current_board[:, k - board_row_start], i, False)
                         score += add_to_score2
                         
                         # Lone tile gets 1 point
@@ -567,9 +561,9 @@ def shift_and_score(state):
                         
                         # Update score based on rows and columns
                         current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
-                        add_to_score1, end = score_line(current_board[i], k - board_row_start, True)
+                        add_to_score1 = score_line(current_board[i], k - board_row_start, True)
                         score_opp += add_to_score1
-                        add_to_score2, _ = score_line(current_board[:, k - board_row_start], i, False)
+                        add_to_score2 = score_line(current_board[:, k - board_row_start], i, False)
                         score_opp += add_to_score2
                         
                         # Lone tile gets 1 point
@@ -592,9 +586,9 @@ def shift_and_score(state):
 
     # Compute difference in scores and return
     new_state[State_Indices.SCORE_DIFF.value] = new_state[State_Indices.SCORE.value] - new_state[State_Indices.SCORE_OPP.value]
-    return new_state, end          
+    return new_state        
     
-def take_action(state, action, rng):
+def get_next_state(state, action, rng):
     """
     Parameters
     ----------
@@ -609,27 +603,21 @@ def take_action(state, action, rng):
     -------
     new_state : np.array[int]
         Representation (len 157) of the subsequent state (after taking action).
-    reward : int
-        A large negative number in the case of an illegal action or a loss, 
-        a large positive number in the case of a win, or the difference in scores
-        otherwise.
     """
     new_state = np.copy(state)
-    reward = state[State_Indices.SCORE_DIFF.value]
-    illegal_action = (state, -np.inf)
     
     # Check for noop action
     noop = State_Indices.NOOP.value
     if action == Action_Indices.NOOP.value:
         if state[noop] == 1:
             new_state[noop] = 0
-            return new_state, reward
+            return new_state
         # Noop is not a valid action
         else:
-            return illegal_action
+            raise RuntimeError("An illegal action was attempted")
     # Must take a noop action
     elif state[noop] == 1:
-        return illegal_action
+        raise RuntimeError("An illegal action was attempted")
         
     # Deal with center action
     elif action < Action_Indices.FACTORIES.value:
@@ -640,7 +628,7 @@ def take_action(state, action, rng):
         # Check that the center does contain one or more corresponding tiles
         center_index = State_Indices.CENTER.value + tile
         if state[center_index] == 0:
-            return illegal_action
+            raise RuntimeError("An illegal action was attempted")
         
         # Move tiles directly to the floor
         if row_num == 5:
@@ -652,17 +640,17 @@ def take_action(state, action, rng):
             for i in range(5):
                 # Another type of tile is in this row
                 if state[row + i] > 0 and i != tile:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 # This row is already full
                 elif state[row + i] == row_num + 1:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 
             # Check to make sure the corresponding spot on the board isn't filled
             board_start = State_Indices.BOARD.value
             current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
             for i in range(5):
                 if Board[row_num][i] == tile and current_board[row_num][i] == 1:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 
             # Move tiles
             new_state[center_index] = 0
@@ -688,7 +676,7 @@ def take_action(state, action, rng):
         # Check that the factory does contain one or more corresponding tiles
         factory_index = State_Indices.FACTORIES.value[factory_num] + tile
         if state[factory_index] == 0:
-            return illegal_action
+            raise RuntimeError("An illegal action was attempted")
         
         # Move tiles directly to the floor
         if row_num == 5:
@@ -700,17 +688,17 @@ def take_action(state, action, rng):
             for i in range(5):
                 # Another type of tile is in this row
                 if state[row + i] > 0 and i != tile:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 # This row is already full
                 elif state[row + i] == row_num + 1:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 
             # Check to make sure the corresponding spot on the board isn't filled
             board_start = State_Indices.BOARD.value
             current_board = np.reshape(np.copy(new_state[board_start:board_start + 25]), (5, 5))
             for i in range(5):
                 if Board[row_num][i] == tile and current_board[row_num][i] == 1:
-                    return illegal_action
+                    raise RuntimeError("An illegal action was attempted")
                 
             # Move tiles
             new_state[factory_index] = 0
@@ -736,20 +724,78 @@ def take_action(state, action, rng):
         if new_state[State_Indices.FLOOR.value + 6] == 1:
             new_state[noop] = 1
         
-        # Score both boards and check for a win condition
-        new_state, end = shift_and_score(new_state)
-        if end:
-            if state[State_Indices.SCORE_DIFF.value] >= 0:
-                return new_state, 100000 # Win!
-            else:
-                return new_state, -100000 # Loss :(
+        # Score both boards
+        new_state = shift_and_score(new_state)
         
         # Prepare for the next round
         selected, new_tiles = shuffle_tiles(np.copy(state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]]), rng)
         new_state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]] = new_tiles
         new_state = add_tiles_to_factories(new_state, selected)
         
-    return new_state, reward
+    return new_state
+
+def get_valid_mask(state):
+    """
+    Parameters
+    ----------
+    state : np.array[int]
+        Representation (len 157) of the current state.
+
+    Returns
+    -------
+    mask : np.array[int]
+        Representation (len 181) of the action space where indices corresponding
+        to legal actions are set to 1, and all others are set to 0
+    """
+    # Check if a noop is the only valid action
+    if state[State_Indices.NOOP.value] == 1:
+        mask = np.zeros(181)
+        mask[0] = 1
+        return mask
+    
+    # Construct 3d representation of action space with all actions initially legal
+    mask = np.ones((6, 5, 6))
+    board_start = State_Indices.BOARD.value
+    current_board = np.reshape(np.copy(state[board_start:board_start + 25]), (5, 5))
+    
+    # Check which tiles can be taken from the center
+    for tile in range(5):
+        if state[State_Indices.CENTER.value + tile] == 0:
+            mask[0, tile, :] = 0
+            
+    # Check which tiles can be taken from the factories
+    for factory in range(5):
+        for tile in range(5):
+            if state[State_Indices.FACTORIES.value[factory] + tile] == 0: 
+                mask[factory + 1, tile, :] = 0
+                
+    # Check each row individually
+    for row in range(5):
+        row_start = State_Indices.ROWS.value[row]
+        total = np.sum(state[row_start:row_start + 5])
+        
+        # Row is empty, we only need to check the board
+        if total == 0:
+            for i in range(5):
+                if current_board[row][i] == 1:
+                    mask[:, Board[row][i], row] = 0
+
+        # Row is full, we can zero out everything
+        elif total == row + 1:
+            mask[:, :, row] = 0
+            
+        # Row is partially full, we need to allow for more of the already
+        # present tile to be added
+        else:
+            for tile in range(5):
+                if state[row_start + tile] == 0:
+                    mask[:, tile, row] = 0
+                    
+    # Reshape and add in another index at the front set to 0
+    temp = np.reshape(mask, 180)
+    mask = np.zeros(181)
+    mask[1:] = temp
+    return mask   
 
 def take_action_from_string(state, input_string, rng):
     """
@@ -776,9 +822,8 @@ def take_action_from_string(state, input_string, rng):
     -------
     new_state : np.array[int]
         Representation (len 157) of the subsequent state (after taking action)
-    reward : int
-        -np.inf in the case of an illegal action, +- 100000 in the case of a
-        win/loss, or the difference in scores otherwise
+    error : bool
+        True if an action was not successfully executed 
     """
     index0_list = np.array(['C', '1', '2', '3', '4', '5'])
     index1_list = np.array(['B', 'Y', 'R', 'D', 'W'])
@@ -793,7 +838,7 @@ def take_action_from_string(state, input_string, rng):
         assert input_string[2] in index2_list
     except AssertionError:
         print("Invalid input string, pease try again.")
-        return state, None
+        return state, True
     
     # Index 0
     for i in range(6):
@@ -811,9 +856,49 @@ def take_action_from_string(state, input_string, rng):
             index += i
         
     # Call 'take_action' and return
-    new_state, reward = take_action(state, index, rng)
-    if np.isneginf(reward):
+    if get_valid_mask(state)[index] == 0:
         print("That action is illegal, please select another action.")
-        return state, None
-    return new_state, reward
+        return state, True
+    new_state = get_next_state(state, index, rng)
+    return new_state, False
     
+def get_reward(state):
+    """
+    Parameters
+    ----------
+    state : np.array[int]
+        Representation (len 157) of the current state.
+
+    Returns
+    -------
+    reward : int
+        -1 on a win (to account for the board immediately being flipped) 1 on
+        a loss, 0 otherwise
+    end: bool
+        Whether or not the game is over
+    """
+    reward = 0
+    end = False
+
+    # Check for end condition in current player's board
+    board = state[State_Indices.BOARD.value:State_Indices.ROWS.value[0]]
+    for row in board.reshape((5, 5)):
+        if np.sum(row) == 5:
+            end = True
+            break
+    
+    # Check for end condition in opponent's board
+    board = state[State_Indices.BOARD_OPP.value:State_Indices.ROWS_OPP.value[0]]
+    for row in board.reshape((5, 5)):
+        if np.sum(row) == 5:
+            end = True
+            break
+    
+    # Calculate reward if game will end
+    if end:
+        if state[State_Indices.SCORE_DIFF.value] > 0:
+            reward = -1
+        elif state[State_Indices.SCORE_DIFF.value] < 0:
+            reward = 1
+            
+    return reward, end
