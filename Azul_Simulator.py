@@ -182,23 +182,20 @@ def add_tiles_to_factories(state, expanded_bag):
     new_state[State_Indices.CENTER.value + Tile_Offsets.S.value] = 1
     return new_state
     
-def init_board(rng):
+def init_board():
     """
     Parameters
     ----------
-    rng : np.random.Generator
-        Global seeded generator object.
+    None
     
     Returns
     -------
     state : np.array[int]
         Representation (len 157) of the original state.
     """
-    tiles = np.array([20, 20, 20, 20, 20, 0, 0, 0, 0, 0])
-    selected, new_tiles = shuffle_tiles(tiles, rng)
+    tiles = np.array([20, 20, 20, 20, 20])
     state = np.zeros(157, dtype=int)
-    state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]] = new_tiles
-    state = add_tiles_to_factories(state, selected)    
+    state[State_Indices.BAG.value:State_Indices.DISCARD.value] = tiles  
     return state
      
 def flip_board(state):
@@ -616,8 +613,16 @@ def get_next_state(state, action, rng):
     # Check for noop action
     noop = State_Indices.NOOP.value
     if action == Action_Indices.NOOP.value:
+        # Regular noop
         if state[noop] == 1:
             new_state[noop] = 0
+            return new_state
+        # First action, we need to shuffle tiles
+        elif np.sum(state[State_Indices.BAG.value:State_Indices.DISCARD.value]) == 100:
+            tiles = np.copy(state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]])
+            selected, new_tiles = shuffle_tiles(tiles, rng)
+            new_state[State_Indices.BAG.value:State_Indices.FACTORIES.value[0]] = new_tiles
+            new_state = add_tiles_to_factories(new_state, selected)
             return new_state
         # Noop is not a valid action
         else:
@@ -755,7 +760,7 @@ def get_valid_mask(state):
         to legal actions are set to 1, and all others are set to 0
     """
     # Check if a noop is the only valid action
-    if state[State_Indices.NOOP.value] == 1:
+    if state[State_Indices.NOOP.value] == 1 or np.sum(state[State_Indices.BAG.value:State_Indices.DISCARD.value]) == 100:
         mask = np.zeros(181, dtype=int)
         mask[State_Indices.NOOP.value] = 1
         return mask

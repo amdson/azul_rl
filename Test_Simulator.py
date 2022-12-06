@@ -10,10 +10,12 @@ rng = np.random.default_rng(6546547)
 
 print("Welcome to the Azul Simulator!")
 print()
-state = init_board(rng)
+state = init_board()
+state = get_next_state(state, Action_Indices.NOOP.value, rng)
+print(state)
 disp_board(state)
 print()
-computer_turn = True
+computer_turn = False
 end = False
 
 while not end:
