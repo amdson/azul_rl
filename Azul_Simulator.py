@@ -730,7 +730,7 @@ def get_next_state(state, action, rng):
             
     # If necessary, score boards and prepare for the following round
     table_start = State_Indices.FACTORIES.value[0]
-    table_end = State_Indices.BOARD.value
+    table_end = State_Indices.BOARD.value - 1
     if not np.any(new_state[table_start:table_end]):
         # Set noop flag if current player has the 1st player token
         if new_state[State_Indices.FLOOR.value + 6] == 1:
