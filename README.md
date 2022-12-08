@@ -3,8 +3,8 @@
 ### Quick Start
 
 Open the notebook *final_hw.ipynb* and follow the instructions included in there. The first cell
-will install needed dependencies. If you wish to install them separately, ensure that you have
-*flax*, *jax*, *optax*, *networkk*, and *colorama* installed.
+will install needed dependencies. If you wish to install them separately, you can install the
+following list of packages: *flax*, *jax*, *optax*, *networkk*, and *colorama*.
 
 ### File Summary
 
